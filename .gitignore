@@ -1,0 +1,26 @@
+# Build output
+bin/
+obj/
+*.user
+.vs/
+
+# Local database, write-ahead files and backups (never commit library data)
+App_Data/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.bak
+backups/
+
+# Local configuration and credentials
+appsettings.Local.json
+appsettings.*.local.json
+secrets.json
+.env
+.env.*
+*.pfx
+
+# Test and tooling output
+TestResults/

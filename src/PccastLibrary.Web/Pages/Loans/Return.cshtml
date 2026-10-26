@@ -1,0 +1,64 @@
+@page "{id:int?}"
+@using PccastLibrary.Web.Pages.Shared
+@model PccastLibrary.Web.Pages.Loans.ReturnModel
+@{
+    ViewData["Title"] = "Return a book";
+    ViewData["Nav"] = "loans";
+}
+<div class="page-head">
+    <div>
+        <p><a asp-page="/Loans/Index">@Html.Icon("arrow-left") Borrowing &amp; returns</a></p>
+        <h1>Return a book</h1>
+        <p>Find the active loan, review the fine, and confirm the return.</p>
+    </div>
+</div>
+
+@if (Model.Loan is null)
+{
+    <form method="get" class="filters card" role="search" aria-label="Find an active loan">
+        <div class="field grow">
+            <label for="q">Find active loan</label>
+            <input id="q" type="search" name="q" value="@Model.Q" placeholder="Accession number, title, student number or name" autofocus />
+        </div>
+        <div class="btn-row"><button class="btn" type="submit">@Html.Icon("search") Search</button></div>
+    </form>
+    <section class="card flush" aria-label="Active loans">
+        <partial name="_LoanTable" model='new LoanTableModel { Loans = Model.Results, EmptyTitle = "No active loans found", EmptyText = "Nothing matches your search, or no books are on loan." }' />
+    </section>
+}
+else
+{
+    var loan = Model.Loan;
+    var fine = Model.Fine!;
+    if (loan.ReturnedAtUtc is not null)
+    {
+        <div class="alert notice" role="status">@Html.Icon("info") <div>This loan was already returned on @Clock.ToLocal(loan.ReturnedAtUtc.Value).ToString("MMM d, yyyy h:mm tt"). <a asp-page="/Loans/Details" asp-route-id="@loan.Id">View the transaction</a>.</div></div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-head"><h2>Loan #@loan.Id</h2>
+                @if (fine.OverdueDays > 0) { <span class="badge danger">Overdue · @fine.OverdueDays @(fine.OverdueDays == 1 ? "day" : "days")</span> }
+                else if (loan.DueDate == Clock.Today) { <span class="badge warn">Due today</span> }
+                else { <span class="badge info">Borrowed</span> }
+            </div>
+            <dl class="details">
+                <dt>Student</dt><dd><a asp-page="/Students/Details" asp-route-id="@loan.StudentId">@loan.Student.FullName</a> · @loan.Student.StudentNumber</dd>
+                <dt>Book copy</dt><dd><a asp-page="/Books/Details" asp-route-id="@loan.BookId">@loan.Book.Title</a> · @loan.Book.AccessionNumber</dd>
+                <dt>Borrowed on</dt><dd>@Clock.ToLocalDate(loan.BorrowedAtUtc).ToString("dddd, MMM d, yyyy")</dd>
+                <dt>Due date</dt><dd>@loan.DueDate.ToString("dddd, MMM d, yyyy")</dd>
+                <dt>Overdue days</dt><dd>@fine.OverdueDays</dd>
+                <dt>Daily fine rate</dt><dd>@Money.Format(loan.DailyFineRateCentavos) (fixed when the loan was created)</dd>
+            </dl>
+            <div class="fine-box mt @(fine.AmountCentavos > 0 ? "has-fine" : "")">
+                <div class="small">Fine if returned now (@Clock.Today.ToString("MMM d, yyyy"))</div>
+                <div class="big">@Money.Format(fine.AmountCentavos)</div>
+                <div class="small">The final amount is calculated again at the moment you confirm, using the Philippine date.</div>
+            </div>
+            <form method="post" class="form-actions">
+                <button type="submit" class="btn teal">@Html.Icon("undo") Confirm return</button>
+                <a class="btn secondary" asp-page="/Loans/Index">Cancel</a>
+            </form>
+        </div>
+    }
+}

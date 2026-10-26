@@ -1,0 +1,56 @@
+@page "{id:int}"
+@using PccastLibrary.Web.Pages.Shared
+@model PccastLibrary.Web.Pages.Students.DetailsModel
+@{
+    var s = Model.Student;
+    ViewData["Title"] = s.FullName;
+    ViewData["Nav"] = "students";
+    var activeTable = new LoanTableModel { Loans = Model.ActiveLoans, ShowStudent = false, EmptyTitle = "No active loans", EmptyText = "This student has nothing on loan." };
+    var historyTable = new LoanTableModel { Loans = Model.History, ShowStudent = false, EmptyTitle = "No borrowing history", EmptyText = "This student has not borrowed any books yet." };
+}
+<div class="page-head">
+    <div>
+        <p><a asp-page="/Students/Index">@Html.Icon("arrow-left") All students</a></p>
+        <h1>@s.FullName</h1>
+        <p>Student no. <strong>@s.StudentNumber</strong> · @s.GradeLevel · @s.Section</p>
+    </div>
+    <div class="actions">
+        @if (s.IsActive) { <a class="btn teal" asp-page="/Loans/Borrow" asp-route-studentId="@s.Id">@Html.Icon("repeat") Borrow a book</a> }
+        <a class="btn secondary" asp-page="/Students/Edit" asp-route-id="@s.Id">@Html.Icon("edit") Edit</a>
+        @if (s.IsActive)
+        {
+            <form method="post" asp-page-handler="Deactivate" asp-route-id="@s.Id" class="inline-form"><button class="btn danger" type="submit" data-confirm="Deactivate this student? They will not be able to borrow, but existing loans can still be returned." data-confirm-label="Deactivate">@Html.Icon("archive") Deactivate</button></form>
+        }
+        else
+        {
+            <form method="post" asp-page-handler="Activate" asp-route-id="@s.Id" class="inline-form"><button class="btn secondary" type="submit">@Html.Icon("undo") Reactivate</button></form>
+        }
+    </div>
+</div>
+
+<div class="stats">
+    <partial name="_Stat" model='("Active loans", Model.ActiveLoans.Count.ToString(), s.IsActive ? "Currently borrowed" : "Inactive: cannot borrow new books", "repeat", "")' />
+    <partial name="_Stat" model='("Outstanding fines", Money.Format(Model.OutstandingFinesCentavos), "Final: returned loans, unpaid balance", "coin", Model.OutstandingFinesCentavos > 0 ? "warn" : "teal")' />
+    <partial name="_Stat" model='("Estimated fines", "≈ " + Money.Format(Model.EstimatedFinesCentavos), "Estimate: unreturned overdue books", "clock", "danger estimate")' />
+</div>
+
+<div class="card">
+    <div class="card-head"><h2>Profile</h2>@if (s.IsActive) { <span class="badge success">Active</span> } else { <span class="badge neutral">Inactive</span> }</div>
+    <dl class="details">
+        <dt>Student number</dt><dd>@s.StudentNumber</dd>
+        <dt>Grade / year level</dt><dd>@s.GradeLevel</dd>
+        <dt>Section / course</dt><dd>@s.Section</dd>
+        <dt>Email</dt><dd>@(s.Email ?? "—")</dd>
+        <dt>Contact number</dt><dd>@(s.ContactNumber ?? "—")</dd>
+        <dt>Record created</dt><dd>@Clock.ToLocal(s.CreatedAtUtc).ToString("MMM d, yyyy")</dd>
+    </dl>
+</div>
+
+<section class="card flush mt" aria-labelledby="active-title">
+    <div class="card-head"><h2 id="active-title">Active loans</h2></div>
+    <partial name="_LoanTable" model="activeTable" />
+</section>
+<section class="card flush mt" aria-labelledby="history-title">
+    <div class="card-head"><h2 id="history-title">Borrowing history</h2></div>
+    <partial name="_LoanTable" model="historyTable" />
+</section>

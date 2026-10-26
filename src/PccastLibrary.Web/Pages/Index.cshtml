@@ -1,0 +1,179 @@
+@page
+@model PccastLibrary.Web.Pages.IndexModel
+@{
+    ViewData["Title"] = "Dashboard";
+    ViewData["Nav"] = "home";
+    var d = Model.Data;
+    var monthMax = Math.Max(5, d.Monthly.Max(m => Math.Max(m.Borrowed, m.Returned)));
+    const double plotLeft = 34, plotTop = 12, plotWidth = 676, plotHeight = 200;
+    var slot = plotWidth / d.Monthly.Count;
+    double Y(int value) => plotTop + plotHeight - (value / (double)monthMax) * plotHeight;
+    string N(double v) => v.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+    var availablePct = d.TotalCopies == 0 ? 0 : d.AvailableCopies * 100.0 / d.TotalCopies;
+    var topMax = d.TopTitles.Count == 0 ? 1 : d.TopTitles.Max(t => t.Count);
+}
+
+@if (d.HasDemoData)
+{
+    <div class="alert notice" role="note">@Html.Icon("info") <div><strong>Fictional development data.</strong> Student and book records shown here (student numbers starting with “DEMO-”) are made up for demonstration. Do not use them for real operations.</div></div>
+}
+
+<section class="hero" aria-labelledby="greeting">
+    <h1 id="greeting">@Model.Greeting, Librarian.</h1>
+    <p><span data-clock-date>@Clock.ToLocal(Clock.UtcNow).ToString("dddd, MMMM d, yyyy")</span> · <span data-clock-time>@Clock.ToLocal(Clock.UtcNow).ToString("h:mm:ss tt") PHT</span></p>
+    <p>
+        @if (d.OverdueCount > 0) { <text>@d.OverdueCount overdue @(d.OverdueCount == 1 ? "book needs" : "books need") attention.</text> }
+        else { <text>No overdue books right now.</text> }
+        @d.DueToday @(d.DueToday == 1 ? "book is" : "books are") due today.
+    </p>
+    <div class="actions" data-reload-at-midnight>
+        <a class="btn primary-cta" asp-page="/Loans/Borrow">@Html.Icon("repeat") Borrow Book</a>
+        <a class="btn" asp-page="/Loans/Index" asp-route-tab="active">@Html.Icon("undo") Return Book</a>
+        <a class="btn" href="/Books/Create">@Html.Icon("plus") Add Book</a>
+        <a class="btn" href="/Students/Create">@Html.Icon("plus") Add Student</a>
+    </div>
+</section>
+
+<h2 class="section-title">Students &amp; collection</h2>
+<div class="stats">
+    <partial name="_Stat" model='("Total students", d.TotalStudents.ToString("N0"), "All records", "users", "")' />
+    <partial name="_Stat" model='("Active students", d.ActiveStudents.ToString("N0"), "Can borrow books", "check", "teal")' />
+    <partial name="_Stat" model='("Book copies in inventory", d.TotalCopies.ToString("N0"), "Excludes archived copies", "layers", "")' />
+    <partial name="_Stat" model='("Available copies", d.AvailableCopies.ToString("N0"), "On the shelf now", "book", "teal")' />
+    <partial name="_Stat" model='("Currently borrowed", d.BorrowedCopies.ToString("N0"), "Copies out on loan", "repeat", "")' />
+</div>
+
+<h2 class="section-title">Loans</h2>
+<div class="stats">
+    <partial name="_Stat" model='("Due today", d.DueToday.ToString("N0"), "Unreturned, due " + d.Today.ToString("MMM d"), "calendar", "warn")' />
+    <partial name="_Stat" model='("Overdue books", d.OverdueCount.ToString("N0"), "Unreturned past due date", "alert", d.OverdueCount > 0 ? "danger" : "")' />
+    <partial name="_Stat" model='("All-time transactions", d.AllTimeTransactions.ToString("N0"), "Every loan ever recorded", "trending", "")' />
+</div>
+
+<h2 class="section-title">Fines</h2>
+<div class="stats">
+    <partial name="_Stat" model='("Outstanding assessed fines", Money.Format(d.OutstandingAssessedFinesCentavos), "Final: returned loans, unpaid balance", "coin", "warn")' />
+    <partial name="_Stat" model='("Estimated overdue fines", "≈ " + Money.Format(d.EstimatedOverdueFinesCentavos), "Estimate only: unreturned books, still accruing", "clock", "danger estimate")' />
+    <partial name="_Stat" model='("Total recorded payments", Money.Format(d.TotalPaymentsCentavos), "Sum of payments entered by staff", "check", "teal")' />
+</div>
+
+<div class="grid-2">
+    <section class="card" aria-labelledby="monthly-title">
+        <div class="card-head"><h2 id="monthly-title">Monthly borrowing activity</h2><span class="muted small">Last 12 months</span></div>
+        <svg class="chart" viewBox="0 0 720 250" role="img" aria-label="Bar chart of books borrowed and returned per month for the last 12 months">
+            @foreach (var tick in new[] { 0, monthMax / 2, monthMax }.Distinct())
+            {
+                <line class="grid" x1="@N(plotLeft)" x2="@N(plotLeft + plotWidth)" y1="@N(Y(tick))" y2="@N(Y(tick))" />
+                @:<text x="@N(plotLeft - 6)" y="@N(Y(tick) + 4)" text-anchor="end">@tick</text>
+            }
+            @for (var i = 0; i < d.Monthly.Count; i++)
+            {
+                var m = d.Monthly[i];
+                var x = plotLeft + i * slot + slot / 2;
+                <rect class="bar-borrowed" x="@N(x - 18)" y="@N(Y(m.Borrowed))" width="16" height="@N(plotTop + plotHeight - Y(m.Borrowed))" rx="3"><title>@m.Label: @m.Borrowed borrowed</title></rect>
+                <rect class="bar-returned" x="@N(x + 2)" y="@N(Y(m.Returned))" width="16" height="@N(plotTop + plotHeight - Y(m.Returned))" rx="3"><title>@m.Label: @m.Returned returned</title></rect>
+                @:<text x="@N(x)" y="236" text-anchor="middle">@m.Label</text>
+            }
+        </svg>
+        <div class="legend"><span><i class="bar-borrowed"></i>Borrowed</span><span><i class="bar-returned"></i>Returned</span></div>
+        <table class="sr-only"><caption>Monthly borrowing activity</caption><thead><tr><th>Month</th><th>Borrowed</th><th>Returned</th></tr></thead>
+            <tbody>@foreach (var m in d.Monthly) { <tr><td>@m.Label</td><td>@m.Borrowed</td><td>@m.Returned</td></tr> }</tbody></table>
+    </section>
+
+    <section class="card" aria-labelledby="avail-title">
+        <div class="card-head"><h2 id="avail-title">Inventory availability</h2><span class="muted small">Excludes archived</span></div>
+        <div class="donut-wrap">
+            <svg class="donut" viewBox="0 0 42 42" role="img" aria-label="@d.AvailableCopies of @d.TotalCopies copies available">
+                <circle class="ring-bg" cx="21" cy="21" r="15.9155" fill="none" stroke-width="5" />
+                @if (d.TotalCopies > 0)
+                {
+                    <circle class="ring-b" cx="21" cy="21" r="15.9155" fill="none" stroke-width="5" stroke-dasharray="100 0" />
+                    <circle class="ring-a" cx="21" cy="21" r="15.9155" fill="none" stroke-width="5" stroke-dasharray="@N(availablePct) @N(100 - availablePct)" transform="rotate(-90 21 21)" />
+                }
+                <text x="21" y="22" text-anchor="middle" font-size="7" font-weight="700">@(d.TotalCopies == 0 ? "–" : Math.Round(availablePct) + "%")</text>
+                <text x="21" y="28" text-anchor="middle" font-size="3" class="donut-sub">available</text>
+            </svg>
+            <ul class="rank donut-legend">
+                <li><span><span class="badge success">Available</span></span><strong class="num">@d.AvailableCopies</strong></li>
+                <li><span><span class="badge info">Borrowed</span></span><strong class="num">@d.BorrowedCopies</strong></li>
+                <li><span class="muted">Total in inventory</span><strong class="num">@d.TotalCopies</strong></li>
+            </ul>
+        </div>
+    </section>
+</div>
+
+<div class="grid-2">
+    <section class="card" aria-labelledby="top-title">
+        <div class="card-head"><h2 id="top-title">Most-borrowed titles</h2><span class="muted small">All time</span></div>
+        @if (d.TopTitles.Count == 0)
+        {
+            <div class="empty">@Html.Icon("book")<p>No borrowing history yet.</p></div>
+        }
+        else
+        {
+            <ol class="rank">
+                @foreach (var t in d.TopTitles)
+                {
+                    <li>
+                        <span><strong>@t.Title</strong><br /><span class="muted small">@t.Author</span></span>
+                        <span class="num">@t.Count @(t.Count == 1 ? "loan" : "loans")</span>
+                        <span class="rank-bar"><svg viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true"><rect width="@N(t.Count * 100.0 / topMax)" height="8" fill="#6366f1" /></svg></span>
+                    </li>
+                }
+            </ol>
+        }
+    </section>
+
+    <section class="card" aria-labelledby="recent-title">
+        <div class="card-head"><h2 id="recent-title">Recent activity</h2><a class="small" asp-page="/Loans/Index" asp-route-tab="all">All transactions</a></div>
+        @if (d.Recent.Count == 0)
+        {
+            <div class="empty">@Html.Icon("repeat")<p>No activity yet.</p></div>
+        }
+        else
+        {
+            <ul class="timeline">
+                @foreach (var a in d.Recent)
+                {
+                    <li>
+                        <span class="dot @(a.IsReturn ? "ret" : "")">@Html.Icon(a.IsReturn ? "undo" : "repeat")</span>
+                        <div>
+                            <div><a asp-page="/Loans/Details" asp-route-id="@a.LoanId"><strong>@a.StudentName</strong></a> @(a.IsReturn ? "returned" : "borrowed") <em>@a.BookTitle</em></div>
+                            <time datetime="@a.AtUtc.ToString("o")">@Clock.ToLocal(a.AtUtc).ToString("MMM d, yyyy h:mm tt") · @a.Accession</time>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+    </section>
+</div>
+
+<section class="card flush mt" aria-labelledby="overdue-title">
+    <div class="card-head"><h2 id="overdue-title">Overdue loans</h2>
+        <a class="small" asp-page="/Loans/Index" asp-route-tab="overdue">View all (@d.OverdueCount)</a></div>
+    @if (d.Overdue.Count == 0)
+    {
+        <div class="empty">@Html.Icon("check")<h3>Nothing overdue</h3><p>Every borrowed book is within its due date.</p></div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="data responsive">
+                <thead><tr><th scope="col">Student</th><th scope="col">Book</th><th scope="col">Due date</th><th scope="col" class="right">Days overdue</th><th scope="col" class="right">Estimated fine</th><th scope="col"><span class="sr-only">Action</span></th></tr></thead>
+                <tbody>
+                @foreach (var o in d.Overdue.Take(10))
+                {
+                    <tr>
+                        <td data-label="Student"><span class="title">@o.StudentName</span><span class="muted small">@o.StudentNumber</span></td>
+                        <td data-label="Book"><span class="title">@o.BookTitle</span><span class="muted small">@o.Accession</span></td>
+                        <td data-label="Due date" class="num">@o.DueDate.ToString("MMM d, yyyy")</td>
+                        <td data-label="Days overdue" class="right num"><span class="badge danger">@o.DaysOverdue @(o.DaysOverdue == 1 ? "day" : "days")</span></td>
+                        <td data-label="Estimated fine" class="right num">≈ @Money.Format(o.EstimatedFineCentavos) <span class="muted small">est.</span></td>
+                        <td class="actions-cell"><a class="btn sm teal" asp-page="/Loans/Return" asp-route-id="@o.LoanId">@Html.Icon("undo") Return</a></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

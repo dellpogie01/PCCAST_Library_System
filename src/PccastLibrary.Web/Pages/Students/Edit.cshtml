@@ -1,0 +1,60 @@
+@page "{id:int?}"
+@model PccastLibrary.Web.Pages.Students.EditModel
+@{
+    ViewData["Title"] = Model.IsNew ? "Add student" : "Edit student";
+    ViewData["Nav"] = "students";
+}
+<div class="page-head">
+    <div>
+        <p><a asp-page="/Students/Index">@Html.Icon("arrow-left") All students</a></p>
+        <h1>@(Model.IsNew ? "Add a student" : "Edit student")</h1>
+        <p>Use fictional details for demonstrations. Never publish real student information.</p>
+    </div>
+</div>
+<form method="post" class="card" novalidate>
+    <div asp-validation-summary="ModelOnly" class="field-error"></div>
+    <div class="form-grid">
+        <div class="field">
+            <label asp-for="Input.StudentNumber">Student number <span class="req" aria-hidden="true">*</span></label>
+            <input asp-for="Input.StudentNumber" type="text" required maxlength="30" autofocus />
+            <span asp-validation-for="Input.StudentNumber" class="field-error"></span>
+        </div>
+        <div class="field"></div>
+        <div class="field">
+            <label asp-for="Input.FirstName">First name <span class="req" aria-hidden="true">*</span></label>
+            <input asp-for="Input.FirstName" type="text" required maxlength="100" autocomplete="off" />
+            <span asp-validation-for="Input.FirstName" class="field-error"></span>
+        </div>
+        <div class="field">
+            <label asp-for="Input.LastName">Last name <span class="req" aria-hidden="true">*</span></label>
+            <input asp-for="Input.LastName" type="text" required maxlength="100" autocomplete="off" />
+            <span asp-validation-for="Input.LastName" class="field-error"></span>
+        </div>
+        <div class="field">
+            <label asp-for="Input.GradeLevel">Grade / year level <span class="req" aria-hidden="true">*</span></label>
+            <input asp-for="Input.GradeLevel" type="text" required maxlength="50" list="grade-list" />
+            <datalist id="grade-list">@foreach (var g in Model.Grades) { <option value="@g"></option> }</datalist>
+            <span asp-validation-for="Input.GradeLevel" class="field-error"></span>
+        </div>
+        <div class="field">
+            <label asp-for="Input.Section">Section / course <span class="req" aria-hidden="true">*</span></label>
+            <input asp-for="Input.Section" type="text" required maxlength="100" list="section-list" />
+            <datalist id="section-list">@foreach (var g in Model.Sections) { <option value="@g"></option> }</datalist>
+            <span asp-validation-for="Input.Section" class="field-error"></span>
+        </div>
+        <div class="field">
+            <label asp-for="Input.Email">Email</label>
+            <input asp-for="Input.Email" type="email" maxlength="200" autocomplete="off" />
+            <span asp-validation-for="Input.Email" class="field-error"></span>
+        </div>
+        <div class="field">
+            <label asp-for="Input.ContactNumber">Contact number</label>
+            <input asp-for="Input.ContactNumber" type="tel" maxlength="30" autocomplete="off" />
+            <span asp-validation-for="Input.ContactNumber" class="field-error"></span>
+        </div>
+    </div>
+    <div class="form-actions">
+        <button type="submit" class="btn">@Html.Icon("check") @(Model.IsNew ? "Add student" : "Save changes")</button>
+        <a class="btn secondary" asp-page="/Students/Index">Cancel</a>
+    </div>
+</form>

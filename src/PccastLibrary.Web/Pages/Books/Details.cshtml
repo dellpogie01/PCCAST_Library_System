@@ -1,0 +1,59 @@
+@page "{id:int}"
+@using PccastLibrary.Web.Pages.Shared
+@model PccastLibrary.Web.Pages.Books.DetailsModel
+@{
+    var b = Model.Book;
+    var active = Model.ActiveLoan;
+    ViewData["Title"] = b.Title;
+    ViewData["Nav"] = "books";
+    var historyTable = new LoanTableModel { Loans = Model.History, ShowBook = false, EmptyTitle = "Never borrowed", EmptyText = "This copy has no borrowing history yet." };
+}
+<div class="page-head">
+    <div>
+        <p><a asp-page="/Books/Index">@Html.Icon("arrow-left") All books</a></p>
+        <h1>@b.Title</h1>
+        <p>@b.Author · Accession <strong>@b.AccessionNumber</strong></p>
+    </div>
+    <div class="actions">
+        @if (!b.IsArchived && active is null) { <a class="btn teal" asp-page="/Loans/Borrow" asp-route-bookId="@b.Id">@Html.Icon("repeat") Borrow this copy</a> }
+        <a class="btn secondary" asp-page="/Books/Edit" asp-route-id="@b.Id">@Html.Icon("edit") Edit</a>
+        @if (b.IsArchived)
+        {
+            <form method="post" asp-page-handler="Restore" asp-route-id="@b.Id" class="inline-form"><button class="btn secondary" type="submit">@Html.Icon("undo") Restore</button></form>
+        }
+        else if (active is null)
+        {
+            <form method="post" asp-page-handler="Archive" asp-route-id="@b.Id" class="inline-form"><button class="btn danger" type="submit" data-confirm="Archive this copy? It will leave the inventory but its borrowing history is kept." data-confirm-label="Archive">@Html.Icon("archive") Archive</button></form>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-head">
+        <h2>Copy details</h2>
+        @if (b.IsArchived) { <span class="badge neutral">Archived</span> }
+        else if (active is not null) { <span class="badge info">Borrowed</span> }
+        else { <span class="badge success">Available</span> }
+    </div>
+    <dl class="details">
+        <dt>Accession number</dt><dd>@b.AccessionNumber</dd>
+        <dt>ISBN</dt><dd>@(b.Isbn ?? "—")</dd>
+        <dt>Category</dt><dd>@b.Category</dd>
+        <dt>Publisher</dt><dd>@(b.Publisher ?? "—")</dd>
+        <dt>Publication year</dt><dd>@(b.PublicationYear?.ToString() ?? "—")</dd>
+        <dt>Shelf location</dt><dd>@b.ShelfLocation</dd>
+        <dt>Added</dt><dd>@Clock.ToLocal(b.CreatedAtUtc).ToString("MMM d, yyyy")</dd>
+        <dt>Last updated</dt><dd>@Clock.ToLocal(b.UpdatedAtUtc).ToString("MMM d, yyyy h:mm tt")</dd>
+        @if (active is not null)
+        {
+            <dt>Currently with</dt><dd><a asp-page="/Students/Details" asp-route-id="@active.StudentId">@active.Student.FullName</a> · due @active.DueDate.ToString("MMM d, yyyy")
+                <a class="btn sm teal" asp-page="/Loans/Return" asp-route-id="@active.Id">Return</a></dd>
+        }
+    </dl>
+    @if (active is not null) { <p class="muted small mt">This copy cannot be archived until it is returned.</p> }
+</div>
+
+<section class="card flush mt" aria-labelledby="history-title">
+    <div class="card-head"><h2 id="history-title">Borrowing history</h2><span class="muted small">@Model.History.Count @(Model.History.Count == 1 ? "transaction" : "transactions")</span></div>
+    <partial name="_LoanTable" model="historyTable" />
+</section>

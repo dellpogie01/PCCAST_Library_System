@@ -1,0 +1,45 @@
+@page
+@using PccastLibrary.Web.Pages.Shared
+@model PccastLibrary.Web.Pages.Loans.IndexModel
+@{
+    ViewData["Title"] = "Borrowing & Returns";
+    ViewData["Nav"] = "loans";
+    var table = new LoanTableModel
+    {
+        Loans = Model.Loans.Items,
+        EmptyTitle = "No transactions here",
+        EmptyText = Model.CurrentTab switch
+        {
+            "due" => "Nothing is due today.",
+            "overdue" => "No unreturned books are overdue.",
+            "returned" => "No books have been returned yet.",
+            "active" => "No books are currently on loan.",
+            _ => "No borrowing transactions have been recorded."
+        }
+    };
+}
+<div class="page-head">
+    <div><h1>Borrowing &amp; returns</h1><p>Checkouts and returns, with fines calculated in Philippine time.</p></div>
+    <div class="actions"><a class="btn" asp-page="/Loans/Borrow">@Html.Icon("repeat") Borrow book</a></div>
+</div>
+
+<nav class="tabs" aria-label="Transaction views">
+    @foreach (var (key, label) in Pages.Loans.IndexModel.Tabs)
+    {
+        <a asp-page="/Loans/Index" asp-route-tab="@key" aria-current="@(Model.CurrentTab == key ? "page" : "false")">@label <span class="badge neutral">@Model.Counts[key]</span></a>
+    }
+</nav>
+
+<form method="get" class="filters card" role="search" aria-label="Search transactions">
+    <input type="hidden" name="tab" value="@Model.CurrentTab" />
+    <div class="field grow">
+        <label for="q">Search</label>
+        <input id="q" type="search" name="q" value="@Model.Q" placeholder="Student number or name, accession number or title" />
+    </div>
+    <div class="btn-row"><button class="btn" type="submit">@Html.Icon("search") Search</button><a class="btn secondary" asp-page="/Loans/Index" asp-route-tab="@Model.CurrentTab">Reset</a></div>
+</form>
+
+<section class="card flush" aria-label="Transactions">
+    <partial name="_LoanTable" model="table" />
+    @if (Model.Loans.Items.Count > 0) { <partial name="_Pager" model="Model.Loans" /> }
+</section>

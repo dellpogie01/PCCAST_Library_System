@@ -1,0 +1,14 @@
+@page
+@using Microsoft.AspNetCore.Authorization
+@attribute [AllowAnonymous]
+@{
+    Layout = "_LoginLayout";
+    ViewData["Title"] = "Something went wrong";
+}
+<div class="auth-panel full-height">
+    <div class="auth-card card">
+        <h1>Something went wrong</h1>
+        <p class="muted">The request could not be completed. Details were recorded in the server log.</p>
+        <a class="btn" href="/">Back to dashboard</a>
+    </div>
+</div>

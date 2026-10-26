@@ -1,0 +1,75 @@
+@page "{id:int}"
+@model PccastLibrary.Web.Pages.Loans.DetailsModel
+@{
+    var loan = Model.Loan;
+    var fine = Model.Fine;
+    ViewData["Title"] = "Loan #" + loan.Id;
+    ViewData["Nav"] = "loans";
+}
+<div class="page-head">
+    <div>
+        <p><a asp-page="/Loans/Index">@Html.Icon("arrow-left") Borrowing &amp; returns</a></p>
+        <h1>Loan #@loan.Id</h1>
+        <p>@loan.Book.Title · @loan.Student.FullName</p>
+    </div>
+    <div class="actions">
+        @if (loan.ReturnedAtUtc is null) { <a class="btn teal" asp-page="/Loans/Return" asp-route-id="@loan.Id">@Html.Icon("undo") Return this book</a> }
+    </div>
+</div>
+
+<div class="stats">
+    @if (fine.IsFinal)
+    {
+        <partial name="_Stat" model='("Final fine", Money.Format(fine.AmountCentavos), fine.OverdueDays + " overdue day(s) at " + Money.Format(loan.DailyFineRateCentavos), "coin", "")' />
+        <partial name="_Stat" model='("Paid so far", Money.Format(fine.PaidCentavos), "Cumulative manual payments", "check", "teal")' />
+        <partial name="_Stat" model='("Balance", Money.Format(fine.BalanceCentavos), fine.BalanceCentavos == 0 ? "Nothing owed" : "Still unpaid", "alert", fine.BalanceCentavos > 0 ? "warn" : "teal")' />
+    }
+    else
+    {
+        <partial name="_Stat" model='("Estimated fine (not final)", "≈ " + Money.Format(fine.AmountCentavos), fine.OverdueDays + " overdue day(s) so far; stops when returned", "clock", "danger estimate")' />
+    }
+</div>
+
+<div class="card">
+    <div class="card-head"><h2>Transaction</h2>
+        @if (loan.ReturnedAtUtc is not null) { <span class="badge success">Returned</span> }
+        else if (fine.OverdueDays > 0) { <span class="badge danger">Overdue</span> }
+        else if (loan.DueDate == Clock.Today) { <span class="badge warn">Due today</span> }
+        else { <span class="badge info">Borrowed</span> }
+    </div>
+    <dl class="details">
+        <dt>Student</dt><dd><a asp-page="/Students/Details" asp-route-id="@loan.StudentId">@loan.Student.FullName</a> · @loan.Student.StudentNumber</dd>
+        <dt>Book copy</dt><dd><a asp-page="/Books/Details" asp-route-id="@loan.BookId">@loan.Book.Title</a> · @loan.Book.AccessionNumber</dd>
+        <dt>Borrowed</dt><dd>@Clock.ToLocal(loan.BorrowedAtUtc).ToString("MMM d, yyyy h:mm tt") PHT</dd>
+        <dt>Due date</dt><dd>@loan.DueDate.ToString("dddd, MMM d, yyyy")</dd>
+        <dt>Returned</dt><dd>@(loan.ReturnedAtUtc is { } r ? Clock.ToLocal(r).ToString("MMM d, yyyy h:mm tt") + " PHT" : "Not yet returned")</dd>
+        <dt>Daily fine rate</dt><dd>@Money.Format(loan.DailyFineRateCentavos)</dd>
+        <dt>Notes</dt><dd>@(loan.Notes ?? "—")</dd>
+    </dl>
+</div>
+
+@if (fine.IsFinal && fine.AmountCentavos > 0)
+{
+    <section class="card mt" aria-labelledby="pay-title">
+        <div class="card-head"><h2 id="pay-title">Fine payment</h2></div>
+        @if (fine.BalanceCentavos > 0)
+        {
+            <form method="post" asp-page-handler="Pay" asp-route-id="@loan.Id">
+                <input type="hidden" name="ExpectedPaidCentavos" value="@Model.ExpectedPaidCentavos" />
+                <div class="form-grid">
+                    <div class="field">
+                        <label for="AmountPesos">Amount received (₱)</label>
+                        <input id="AmountPesos" name="AmountPesos" type="text" inputmode="decimal" value="@Model.AmountPesos" required autocomplete="off" />
+                        <span class="hint">Remaining balance: @Money.Format(fine.BalanceCentavos). Partial payments are allowed; overpayment is not.</span>
+                    </div>
+                </div>
+                <div class="form-actions"><button type="submit" class="btn">@Html.Icon("coin") Record payment</button></div>
+            </form>
+        }
+        else
+        {
+            <div class="alert success" role="status">@Html.Icon("check") <div>This fine has been paid in full.</div></div>
+        }
+        <p class="muted small mt">This is a simple manual tracker: it stores the cumulative amount paid on this loan. It does not keep individual receipts, payment history, or refunds, and it is not a payment gateway.</p>
+    </section>
+}

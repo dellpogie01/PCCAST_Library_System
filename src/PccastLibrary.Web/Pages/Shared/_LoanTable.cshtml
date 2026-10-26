@@ -1,0 +1,68 @@
+@model PccastLibrary.Web.Pages.Shared.LoanTableModel
+@if (Model.Loans.Count == 0)
+{
+    <div class="empty">@Html.Icon("repeat")<h3>@Model.EmptyTitle</h3><p>@Model.EmptyText</p></div>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="data responsive">
+            <thead>
+                <tr>
+                    <th scope="col">Loan</th>
+                    @if (Model.ShowStudent) { <th scope="col">Student</th> }
+                    @if (Model.ShowBook) { <th scope="col">Book copy</th> }
+                    <th scope="col">Borrowed</th>
+                    <th scope="col">Due</th>
+                    <th scope="col">Returned</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" class="right">Fine</th>
+                    <th scope="col"><span class="sr-only">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var loan in Model.Loans)
+            {
+                var fine = Fines.Assess(loan);
+                <tr>
+                    <td data-label="Loan"><a asp-page="/Loans/Details" asp-route-id="@loan.Id">#@loan.Id</a></td>
+                    @if (Model.ShowStudent)
+                    {
+                        <td data-label="Student"><a asp-page="/Students/Details" asp-route-id="@loan.StudentId"><span class="title">@loan.Student.FullName</span></a><span class="muted small">@loan.Student.StudentNumber</span></td>
+                    }
+                    @if (Model.ShowBook)
+                    {
+                        <td data-label="Book copy"><a asp-page="/Books/Details" asp-route-id="@loan.BookId"><span class="title">@loan.Book.Title</span></a><span class="muted small">@loan.Book.AccessionNumber</span></td>
+                    }
+                    <td data-label="Borrowed" class="num">@Clock.ToLocalDate(loan.BorrowedAtUtc).ToString("MMM d, yyyy")</td>
+                    <td data-label="Due" class="num">@loan.DueDate.ToString("MMM d, yyyy")</td>
+                    <td data-label="Returned" class="num">@(loan.ReturnedAtUtc is { } r ? Clock.ToLocalDate(r).ToString("MMM d, yyyy") : "—")</td>
+                    <td data-label="Status">
+                        @if (loan.ReturnedAtUtc is not null)
+                        {
+                            if (fine.AmountCentavos == 0) { <span class="badge success">Returned</span> }
+                            else if (fine.BalanceCentavos > 0) { <span class="badge warn">Returned · fine due</span> }
+                            else { <span class="badge info">Returned · fine paid</span> }
+                        }
+                        else if (fine.OverdueDays > 0) { <span class="badge danger">Overdue · @fine.OverdueDays d</span> }
+                        else if (loan.DueDate == Clock.Today) { <span class="badge warn">Due today</span> }
+                        else { <span class="badge info">Borrowed</span> }
+                    </td>
+                    <td data-label="Fine" class="right num">
+                        @if (fine.AmountCentavos == 0) { <span class="muted">—</span> }
+                        else if (fine.IsFinal) { <span>@Money.Format(fine.AmountCentavos)</span> }
+                        else { <span title="Estimate: still accruing until returned">≈ @Money.Format(fine.AmountCentavos) <span class="muted small">est.</span></span> }
+                    </td>
+                    <td class="actions-cell">
+                        @if (loan.ReturnedAtUtc is null && Model.ShowActions)
+                        {
+                            <a class="btn sm teal" asp-page="/Loans/Return" asp-route-id="@loan.Id">@Html.Icon("undo") Return</a>
+                        }
+                        <a class="btn sm secondary" asp-page="/Loans/Details" asp-route-id="@loan.Id">@Html.Icon("eye") View</a>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}

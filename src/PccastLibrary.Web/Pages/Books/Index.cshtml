@@ -1,0 +1,89 @@
+@page
+@model PccastLibrary.Web.Pages.Books.IndexModel
+@{
+    ViewData["Title"] = "Books";
+    ViewData["Nav"] = "books";
+}
+<div class="page-head">
+    <div><h1>Books</h1><p>Each row is one physical copy with its own accession number.</p></div>
+    <div class="actions"><a class="btn" href="/Books/Create">@Html.Icon("plus") Add book</a></div>
+</div>
+
+<form method="get" class="filters card" role="search" aria-label="Filter books">
+    <div class="field grow">
+        <label for="q">Search</label>
+        <input id="q" type="search" name="q" value="@Model.Q" placeholder="Accession no., ISBN, title or author" />
+    </div>
+    <div class="field">
+        <label for="category">Category</label>
+        <select id="category" name="category">
+            <option value="">All categories</option>
+            @foreach (var c in Model.Categories) { <option value="@c" selected="@(c == Model.Category)">@c</option> }
+        </select>
+    </div>
+    <div class="field">
+        <label for="status">Availability</label>
+        <select id="status" name="status">
+            <option value="" selected="@(string.IsNullOrEmpty(Model.Status))">Current inventory</option>
+            <option value="available" selected="@(Model.Status == "available")">Available</option>
+            <option value="borrowed" selected="@(Model.Status == "borrowed")">Borrowed</option>
+            <option value="archived" selected="@(Model.Status == "archived")">Archived</option>
+            <option value="all" selected="@(Model.Status == "all")">Everything</option>
+        </select>
+    </div>
+    <div class="btn-row"><button class="btn" type="submit">@Html.Icon("search") Apply</button><a class="btn secondary" asp-page="/Books/Index">Reset</a></div>
+</form>
+
+<section class="card flush" aria-label="Book list">
+@if (Model.Books.Items.Count == 0)
+{
+    <div class="empty">@Html.Icon("book")<h3>No books found</h3><p>Try a different search or filter, or add a new copy.</p><a class="btn" href="/Books/Create">Add book</a></div>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="data responsive">
+            <thead>
+                <tr>
+                    <partial name="_SortHeader" model='("accession", "Accession", Model.Sort, Model.Dir)' />
+                    <partial name="_SortHeader" model='("title", "Title", Model.Sort, Model.Dir)' />
+                    <partial name="_SortHeader" model='("author", "Author", Model.Sort, Model.Dir)' />
+                    <partial name="_SortHeader" model='("category", "Category", Model.Sort, Model.Dir)' />
+                    <th scope="col">Shelf</th>
+                    <th scope="col">Status</th>
+                    <th scope="col"><span class="sr-only">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var row in Model.Books.Items)
+            {
+                var b = row.Book;
+                <tr>
+                    <td data-label="Accession" class="num"><strong>@b.AccessionNumber</strong></td>
+                    <td data-label="Title"><a asp-page="/Books/Details" asp-route-id="@b.Id"><span class="title">@b.Title</span></a>@if (!string.IsNullOrEmpty(b.Isbn)) { <span class="muted small">ISBN @b.Isbn</span> }</td>
+                    <td data-label="Author">@b.Author</td>
+                    <td data-label="Category">@b.Category</td>
+                    <td data-label="Shelf">@b.ShelfLocation</td>
+                    <td data-label="Status">
+                        @if (b.IsArchived) { <span class="badge neutral">Archived</span> }
+                        else if (row.IsBorrowed) { <span class="badge info">Borrowed</span> }
+                        else { <span class="badge success">Available</span> }
+                    </td>
+                    <td class="actions-cell">
+                        <a class="btn sm secondary" asp-page="/Books/Details" asp-route-id="@b.Id">@Html.Icon("eye") View</a>
+                        <a class="btn sm secondary" asp-page="/Books/Edit" asp-route-id="@b.Id">@Html.Icon("edit") Edit</a>
+                        @if (!b.IsArchived && !row.IsBorrowed)
+                        {
+                            <form method="post" asp-page="/Books/Details" asp-page-handler="Archive" asp-route-id="@b.Id" class="inline-form">
+                                <button type="submit" class="btn sm secondary" data-confirm="Archive copy @b.AccessionNumber (@b.Title)? It will leave the inventory but its history is kept." data-confirm-label="Archive">@Html.Icon("archive") Archive</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <partial name="_Pager" model="Model.Books" />
+}
+</section>

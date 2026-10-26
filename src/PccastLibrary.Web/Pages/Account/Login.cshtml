@@ -1,0 +1,52 @@
+@page
+@model PccastLibrary.Web.Pages.Account.LoginModel
+@{
+    Layout = "_LoginLayout";
+    ViewData["Title"] = "Sign in";
+}
+<div class="auth-page">
+    <section class="auth-art" aria-hidden="true">
+        <div class="brand">
+            <span class="brand-mark">@Html.Icon("book")</span>
+            <span class="brand-text"><strong>PCCAST</strong><span>Library System</span></span>
+        </div>
+        <div>
+            <h2>Books, borrowers and returns in one calm place.</h2>
+            <p>Manage the collection, keep student records current, and follow every loan from checkout to return.</p>
+        </div>
+        <p class="small">Administrator access only.</p>
+    </section>
+    <section class="auth-panel">
+        <div class="auth-card">
+            <div class="brand">
+                <span class="brand-mark">@Html.Icon("book")</span>
+                <span class="brand-text"><strong>PCCAST</strong><span>Library System</span></span>
+            </div>
+            <h1>Welcome back</h1>
+            <p class="muted">Sign in with the librarian account to continue.</p>
+
+            @if (!Model.IsConfigured)
+            {
+                <div class="alert warning" role="alert">@Html.Icon("alert") <div>The administrator account has not been configured on this server. See the README for the setup steps.</div></div>
+            }
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="alert error" role="alert">@Html.Icon("alert") <div>@Model.ErrorMessage</div></div>
+            }
+            <form method="post" class="card" autocomplete="on">
+                <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl" />
+                <div class="form-grid">
+                    <div class="field wide">
+                        <label for="username">Username</label>
+                        <input id="username" asp-for="Input.Username" type="text" autocomplete="username" autofocus required maxlength="100" />
+                    </div>
+                    <div class="field wide">
+                        <label for="password">Password</label>
+                        <input id="password" asp-for="Input.Password" type="password" autocomplete="current-password" required maxlength="200" />
+                    </div>
+                </div>
+                <div class="form-actions"><button type="submit" class="btn w-full">Sign in</button></div>
+            </form>
+        </div>
+    </section>
+</div>

@@ -1,0 +1,90 @@
+@page
+@model PccastLibrary.Web.Pages.Students.IndexModel
+@{
+    ViewData["Title"] = "Students";
+    ViewData["Nav"] = "students";
+}
+<div class="page-head">
+    <div><h1>Students</h1><p>Student records and their borrowing status.</p></div>
+    <div class="actions"><a class="btn" href="/Students/Create">@Html.Icon("plus") Add student</a></div>
+</div>
+
+<form method="get" class="filters card" role="search" aria-label="Filter students">
+    <div class="field grow">
+        <label for="q">Search</label>
+        <input id="q" type="search" name="q" value="@Model.Q" placeholder="Student number or name" />
+    </div>
+    <div class="field">
+        <label for="grade">Grade / year</label>
+        <select id="grade" name="grade">
+            <option value="">All</option>
+            @foreach (var g in Model.Grades) { <option value="@g" selected="@(g == Model.Grade)">@g</option> }
+        </select>
+    </div>
+    <div class="field">
+        <label for="section">Section / course</label>
+        <select id="section" name="section">
+            <option value="">All</option>
+            @foreach (var s in Model.Sections) { <option value="@s" selected="@(s == Model.Section)">@s</option> }
+        </select>
+    </div>
+    <div class="field">
+        <label for="status">Status</label>
+        <select id="status" name="status">
+            <option value="">All</option>
+            <option value="active" selected="@(Model.Status == "active")">Active</option>
+            <option value="inactive" selected="@(Model.Status == "inactive")">Inactive</option>
+        </select>
+    </div>
+    <div class="btn-row"><button class="btn" type="submit">@Html.Icon("search") Apply</button><a class="btn secondary" asp-page="/Students/Index">Reset</a></div>
+</form>
+
+<section class="card flush" aria-label="Student list">
+@if (Model.Students.Items.Count == 0)
+{
+    <div class="empty">@Html.Icon("users")<h3>No students found</h3><p>Try a different search or filter, or add a student.</p><a class="btn" href="/Students/Create">Add student</a></div>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="data responsive">
+            <thead>
+                <tr>
+                    <partial name="_SortHeader" model='("number", "Student no.", Model.Sort, Model.Dir)' />
+                    <partial name="_SortHeader" model='("name", "Name", Model.Sort, Model.Dir)' />
+                    <partial name="_SortHeader" model='("grade", "Grade / year", Model.Sort, Model.Dir)' />
+                    <partial name="_SortHeader" model='("section", "Section / course", Model.Sort, Model.Dir)' />
+                    <th scope="col">Active loans</th>
+                    <th scope="col">Status</th>
+                    <th scope="col"><span class="sr-only">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var row in Model.Students.Items)
+            {
+                var s = row.Student;
+                <tr>
+                    <td data-label="Student no." class="num"><strong>@s.StudentNumber</strong></td>
+                    <td data-label="Name"><a asp-page="/Students/Details" asp-route-id="@s.Id"><span class="title">@s.FullName</span></a>@if (!string.IsNullOrEmpty(s.Email)) { <span class="muted small">@s.Email</span> }</td>
+                    <td data-label="Grade / year">@s.GradeLevel</td>
+                    <td data-label="Section / course">@s.Section</td>
+                    <td data-label="Active loans" class="num">@row.ActiveLoans</td>
+                    <td data-label="Status">@if (s.IsActive) { <span class="badge success">Active</span> } else { <span class="badge neutral">Inactive</span> }</td>
+                    <td class="actions-cell">
+                        <a class="btn sm secondary" asp-page="/Students/Details" asp-route-id="@s.Id">@Html.Icon("eye") View</a>
+                        <a class="btn sm secondary" asp-page="/Students/Edit" asp-route-id="@s.Id">@Html.Icon("edit") Edit</a>
+                        @if (s.IsActive)
+                        {
+                            <form method="post" asp-page="/Students/Details" asp-page-handler="Deactivate" asp-route-id="@s.Id" class="inline-form">
+                                <button type="submit" class="btn sm secondary" data-confirm="Deactivate @s.FullName? They will no longer be able to borrow, but existing loans can still be returned." data-confirm-label="Deactivate">@Html.Icon("archive") Deactivate</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <partial name="_Pager" model="Model.Students" />
+}
+</section>

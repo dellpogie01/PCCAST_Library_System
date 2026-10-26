@@ -1,0 +1,6 @@
+@model (string Label, string Value, string? Note, string Icon, string Css)
+<div class="stat @Model.Css">
+    <div class="stat-label"><span class="stat-icon">@Html.Icon(Model.Icon)</span> @Model.Label</div>
+    <div class="stat-value">@Model.Value</div>
+    @if (Model.Note is not null) { <div class="stat-note">@Model.Note</div> }
+</div>

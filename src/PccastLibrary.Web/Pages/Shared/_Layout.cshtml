@@ -1,0 +1,80 @@
+@inject AdminAuthenticator Admin
+@{
+    var nav = ViewData["Nav"] as string;
+    string Current(string key) => nav == key ? "page" : "false";
+    var now = Clock.ToLocal(Clock.UtcNow);
+}
+<!DOCTYPE html>
+<html lang="en" data-theme="system">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>@ViewData["Title"] · PCCAST Library System</title>
+    <link rel="icon" href="~/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <script src="~/js/theme.js" asp-append-version="true"></script>
+    <script src="~/js/app.js" asp-append-version="true" defer></script>
+</head>
+<body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="app-shell">
+        <aside class="sidebar" id="sidebar" aria-label="Primary">
+            <a class="brand" asp-page="/Index">
+                <span class="brand-mark">@Html.Icon("book")</span>
+                <span class="brand-text"><strong>PCCAST</strong><span>Library System</span></span>
+            </a>
+            <nav class="nav" aria-label="Main navigation">
+                <span class="nav-label">Library</span>
+                <a asp-page="/Index" aria-current="@Current("home")">@Html.Icon("home") Dashboard</a>
+                <a asp-page="/Books/Index" aria-current="@Current("books")">@Html.Icon("layers") Books</a>
+                <a asp-page="/Students/Index" aria-current="@Current("students")">@Html.Icon("users") Students</a>
+                <a asp-page="/Loans/Index" aria-current="@Current("loans")">@Html.Icon("repeat") Borrowing &amp; Returns</a>
+            </nav>
+            <p class="sidebar-foot">Fines are computed in Philippine time (Asia/Manila).</p>
+        </aside>
+        <div class="scrim" data-drawer-close></div>
+
+        <div class="main-col">
+            <header class="topbar">
+                <button type="button" class="btn secondary sm menu-btn" data-drawer-toggle aria-controls="sidebar" aria-expanded="false" aria-label="Open navigation menu">@Html.Icon("menu") <span class="sr-only">Menu</span></button>
+                <div class="topbar-title">@ViewData["Title"]</div>
+                <div class="clock" aria-label="Current Philippine date and time">
+                    <span class="time" data-clock-time>@now.ToString("h:mm:ss tt") PHT</span>
+                    <span class="date" data-clock-date>@now.ToString("dddd, MMMM d, yyyy")</span>
+                </div>
+                <div class="theme-switch" role="group" aria-label="Colour theme">
+                    <button type="button" data-theme-choice="light" aria-pressed="false" title="Light theme" aria-label="Light theme">@Html.Icon("sun")</button>
+                    <button type="button" data-theme-choice="system" aria-pressed="true" title="Follow system theme" aria-label="System theme">@Html.Icon("monitor")</button>
+                    <button type="button" data-theme-choice="dark" aria-pressed="false" title="Dark theme" aria-label="Dark theme">@Html.Icon("moon")</button>
+                </div>
+                <details class="account">
+                    <summary>@Html.Icon("user") <span class="name">@Admin.DisplayName</span></summary>
+                    <div class="account-panel">
+                        <div class="who">Signed in as <strong>@Admin.DisplayName</strong></div>
+                        <form method="post" asp-page="/Account/Logout">
+                            <button type="submit" class="btn secondary sm w-full">@Html.Icon("logout") Sign out</button>
+                        </form>
+                    </div>
+                </details>
+            </header>
+            <main id="main" tabindex="-1">
+                <partial name="_Alerts" />
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <dialog id="confirm-dialog" aria-labelledby="confirm-title">
+        <form method="dialog">
+            <h2 id="confirm-title">Please confirm</h2>
+            <p data-confirm-message></p>
+            <div class="btn-row">
+                <button type="submit" value="cancel" class="btn secondary" data-keep-enabled>Cancel</button>
+                <button type="submit" value="ok" class="btn danger" data-confirm-ok data-keep-enabled>Confirm</button>
+            </div>
+        </form>
+    </dialog>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

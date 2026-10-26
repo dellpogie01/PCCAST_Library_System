@@ -1,0 +1,22 @@
+@model PccastLibrary.Web.Services.IPagedInfo
+@{
+    var first = Model.TotalCount == 0 ? 0 : (Model.Page - 1) * Model.PageSize + 1;
+    var last = Math.Min(Model.TotalCount, Model.Page * Model.PageSize);
+}
+<div class="pager">
+    <span>Showing @first–@last of @Model.TotalCount</span>
+    @if (Model.TotalPages > 1)
+    {
+        <nav aria-label="Pagination">
+            @if (Model.Page > 1) { <a href="@ListLinks.Page(Context.Request, Model.Page - 1)" rel="prev">Previous</a> }
+            else { <span class="off" aria-hidden="true">Previous</span> }
+            @foreach (var p in Enumerable.Range(1, Model.TotalPages).Where(p => p == 1 || p == Model.TotalPages || Math.Abs(p - Model.Page) <= 1))
+            {
+                if (p == Model.Page) { <span class="cur" aria-current="page">@p</span> }
+                else { <a href="@ListLinks.Page(Context.Request, p)" aria-label="Page @p">@p</a> }
+            }
+            @if (Model.Page < Model.TotalPages) { <a href="@ListLinks.Page(Context.Request, Model.Page + 1)" rel="next">Next</a> }
+            else { <span class="off" aria-hidden="true">Next</span> }
+        </nav>
+    }
+</div>

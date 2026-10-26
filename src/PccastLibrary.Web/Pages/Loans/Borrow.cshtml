@@ -1,0 +1,136 @@
+@page
+@model PccastLibrary.Web.Pages.Loans.BorrowModel
+@{
+    ViewData["Title"] = "Borrow a book";
+    ViewData["Nav"] = "loans";
+    var studentOk = Model.Student is not null && Model.StudentProblem is null;
+    var bookOk = Model.Book is not null && Model.BookProblem is null;
+}
+<div class="page-head">
+    <div>
+        <p><a asp-page="/Loans/Index">@Html.Icon("arrow-left") Borrowing &amp; returns</a></p>
+        <h1>Borrow a book</h1>
+        <p>Choose the student, choose an available copy, then confirm the due date.</p>
+    </div>
+</div>
+
+<div asp-validation-summary="ModelOnly" class="alert error" role="alert"></div>
+
+<section class="card" aria-labelledby="step1">
+    <div class="step @(studentOk ? "done" : "")"><span class="n">@(studentOk ? "✓" : "1")</span><h2 id="step1">Student</h2></div>
+    @if (Model.StudentProblem is not null)
+    {
+        <div class="alert error" role="alert">@Html.Icon("alert") <div>@Model.StudentProblem</div></div>
+    }
+    @if (studentOk)
+    {
+        var s = Model.Student!;
+        <div class="selected-box">
+            <div><strong>@s.FullName</strong><br /><span class="muted small">@s.StudentNumber · @s.GradeLevel · @s.Section</span></div>
+            <a class="btn sm secondary" asp-page="/Loans/Borrow" asp-route-bookId="@Model.BookId">Change student</a>
+        </div>
+    }
+    else
+    {
+        <form method="get" role="search" aria-label="Find a student">
+            <input type="hidden" name="bookId" value="@Model.BookId" />
+            <div class="filters">
+                <div class="field grow">
+                    <label for="studentQ">Search active students</label>
+                    <input id="studentQ" type="search" name="studentQ" value="@Model.StudentQ" placeholder="Student number or name" autofocus />
+                </div>
+                <div class="btn-row"><button class="btn" type="submit">@Html.Icon("search") Find student</button></div>
+            </div>
+        </form>
+        @if (!string.IsNullOrWhiteSpace(Model.StudentQ))
+        {
+            @if (Model.StudentResults.Count == 0) { <p class="muted">No active students match “@Model.StudentQ”. Inactive students cannot borrow.</p> }
+            else
+            {
+                <ul class="pick-list">
+                @foreach (var s in Model.StudentResults)
+                {
+                    <li><a asp-page="/Loans/Borrow" asp-route-studentId="@s.Id" asp-route-bookId="@Model.BookId" asp-route-bookQ="@Model.BookQ"><span><strong>@s.FullName</strong></span><span class="muted">@s.StudentNumber · @s.GradeLevel · @s.Section</span></a></li>
+                }
+                </ul>
+            }
+        }
+    }
+</section>
+
+<section class="card" aria-labelledby="step2">
+    <div class="step @(bookOk ? "done" : "")"><span class="n">@(bookOk ? "✓" : "2")</span><h2 id="step2">Book copy</h2></div>
+    @if (Model.BookProblem is not null)
+    {
+        <div class="alert error" role="alert">@Html.Icon("alert") <div>@Model.BookProblem</div></div>
+    }
+    @if (bookOk)
+    {
+        var b = Model.Book!;
+        <div class="selected-box">
+            <div><strong>@b.Title</strong><br /><span class="muted small">@b.Author · Accession @b.AccessionNumber · @b.Category · Shelf @b.ShelfLocation@(b.Isbn is null ? "" : " · ISBN " + b.Isbn)</span></div>
+            <div><span class="badge success">Available</span> <a class="btn sm secondary" asp-page="/Loans/Borrow" asp-route-studentId="@Model.StudentId">Change book</a></div>
+        </div>
+    }
+    else
+    {
+        <form method="get" role="search" aria-label="Find an available book copy">
+            <input type="hidden" name="studentId" value="@Model.StudentId" />
+            <div class="filters">
+                <div class="field grow">
+                    <label for="bookQ">Search available copies</label>
+                    <input id="bookQ" type="search" name="bookQ" value="@Model.BookQ" placeholder="Accession number, ISBN, title or author" />
+                </div>
+                <div class="btn-row"><button class="btn" type="submit">@Html.Icon("search") Find book</button></div>
+            </div>
+        </form>
+        @if (!string.IsNullOrWhiteSpace(Model.BookQ))
+        {
+            @if (Model.BookResults.Count == 0) { <p class="muted">No available copies match “@Model.BookQ”. Borrowed and archived copies are not listed.</p> }
+            else
+            {
+                <ul class="pick-list">
+                @foreach (var b in Model.BookResults)
+                {
+                    <li><a asp-page="/Loans/Borrow" asp-route-studentId="@Model.StudentId" asp-route-bookId="@b.Id" asp-route-studentQ="@Model.StudentQ"><span><strong>@b.Title</strong> <span class="muted">· @b.Author</span></span><span class="muted">@b.AccessionNumber · Shelf @b.ShelfLocation</span></a></li>
+                }
+                </ul>
+            }
+        }
+    }
+</section>
+
+<section class="card" aria-labelledby="step3">
+    <div class="step"><span class="n">3</span><h2 id="step3">Confirm</h2></div>
+    @if (!Model.CanConfirm)
+    {
+        <p class="muted">Select a student and an available copy to continue.</p>
+    }
+    else
+    {
+        <form method="post">
+            <input type="hidden" name="StudentId" value="@Model.StudentId" />
+            <input type="hidden" name="BookId" value="@Model.BookId" />
+            <div class="form-grid">
+                <div class="field">
+                    <label for="DueDate">Due date</label>
+                    <input id="DueDate" name="DueDate" type="date" value="@((Model.DueDate ?? Model.DefaultDueDate).ToString("yyyy-MM-dd"))" min="@Model.Today.ToString("yyyy-MM-dd")" required />
+                    <span class="hint">Defaults to 7 days after today (@Model.Today.ToString("MMM d, yyyy")). Administrators may override it.</span>
+                </div>
+                <div class="field">
+                    <label for="Notes">Notes (optional)</label>
+                    <input id="Notes" name="Notes" type="text" maxlength="500" value="@Model.Notes" />
+                </div>
+            </div>
+            <div class="fine-box mt">
+                <div class="muted small">Overdue fine rate for this loan</div>
+                <div class="big">@Money.Format(Model.DailyRateCentavos) <span class="small muted">per overdue calendar day</span></div>
+                <div class="muted small">No fine on the due date. Fines start the next Philippine calendar day and stop when the book is returned.</div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn teal">@Html.Icon("check") Confirm borrowing</button>
+                <a class="btn secondary" asp-page="/Loans/Index">Cancel</a>
+            </div>
+        </form>
+    }
+</section>

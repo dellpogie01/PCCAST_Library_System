@@ -1,0 +1,65 @@
+@page "{id:int?}"
+@model PccastLibrary.Web.Pages.Books.EditModel
+@{
+    ViewData["Title"] = Model.IsNew ? "Add book" : "Edit book";
+    ViewData["Nav"] = "books";
+}
+<div class="page-head">
+    <div>
+        <p><a asp-page="/Books/Index">@Html.Icon("arrow-left") All books</a></p>
+        <h1>@(Model.IsNew ? "Add a book copy" : "Edit book copy")</h1>
+        <p>One record per physical copy. Add another record for each extra copy of the same title.</p>
+    </div>
+</div>
+<form method="post" class="card" novalidate>
+    <div asp-validation-summary="ModelOnly" class="field-error"></div>
+    <div class="form-grid">
+        <div class="field">
+            <label asp-for="Input.AccessionNumber">Accession number <span class="req" aria-hidden="true">*</span></label>
+            <input asp-for="Input.AccessionNumber" type="text" required maxlength="40" autofocus />
+            <span asp-validation-for="Input.AccessionNumber" class="field-error"></span>
+            <span class="hint">Unique per physical copy.</span>
+        </div>
+        <div class="field">
+            <label asp-for="Input.Isbn">ISBN</label>
+            <input asp-for="Input.Isbn" type="text" maxlength="20" inputmode="text" />
+            <span asp-validation-for="Input.Isbn" class="field-error"></span>
+            <span class="hint">Optional; shared by copies of the same edition.</span>
+        </div>
+        <div class="field wide">
+            <label asp-for="Input.Title">Title <span class="req" aria-hidden="true">*</span></label>
+            <input asp-for="Input.Title" type="text" required maxlength="300" />
+            <span asp-validation-for="Input.Title" class="field-error"></span>
+        </div>
+        <div class="field">
+            <label asp-for="Input.Author">Author <span class="req" aria-hidden="true">*</span></label>
+            <input asp-for="Input.Author" type="text" required maxlength="200" />
+            <span asp-validation-for="Input.Author" class="field-error"></span>
+        </div>
+        <div class="field">
+            <label asp-for="Input.Category">Category <span class="req" aria-hidden="true">*</span></label>
+            <input asp-for="Input.Category" type="text" required maxlength="100" list="category-list" />
+            <datalist id="category-list">@foreach (var c in Model.Categories) { <option value="@c"></option> }</datalist>
+            <span asp-validation-for="Input.Category" class="field-error"></span>
+        </div>
+        <div class="field">
+            <label asp-for="Input.Publisher">Publisher</label>
+            <input asp-for="Input.Publisher" type="text" maxlength="200" />
+            <span asp-validation-for="Input.Publisher" class="field-error"></span>
+        </div>
+        <div class="field">
+            <label asp-for="Input.PublicationYear">Publication year</label>
+            <input asp-for="Input.PublicationYear" type="number" min="1000" max="2200" inputmode="numeric" />
+            <span asp-validation-for="Input.PublicationYear" class="field-error"></span>
+        </div>
+        <div class="field">
+            <label asp-for="Input.ShelfLocation">Shelf location <span class="req" aria-hidden="true">*</span></label>
+            <input asp-for="Input.ShelfLocation" type="text" required maxlength="50" />
+            <span asp-validation-for="Input.ShelfLocation" class="field-error"></span>
+        </div>
+    </div>
+    <div class="form-actions">
+        <button type="submit" class="btn">@Html.Icon("check") @(Model.IsNew ? "Add book" : "Save changes")</button>
+        <a class="btn secondary" asp-page="/Books/Index">Cancel</a>
+    </div>
+</form>

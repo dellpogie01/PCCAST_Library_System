@@ -1,0 +1,8 @@
+@model (string Column, string Label, string? Sort, string? Dir)
+@{
+    var active = string.Equals(Model.Sort, Model.Column, StringComparison.OrdinalIgnoreCase);
+    var ariaSort = active ? (Model.Dir == "desc" ? "descending" : "ascending") : "none";
+}
+<th scope="col" aria-sort="@ariaSort">
+    <a href="@ListLinks.Sort(Context.Request, Model.Column, Model.Sort, Model.Dir)">@Model.Label@(active ? (Model.Dir == "desc" ? " ▼" : " ▲") : "")</a>
+</th>

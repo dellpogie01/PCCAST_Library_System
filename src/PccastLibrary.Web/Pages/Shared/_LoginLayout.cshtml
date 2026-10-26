@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="system">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>@ViewData["Title"] · PCCAST Library System</title>
+    <link rel="icon" href="~/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <script src="~/js/theme.js" asp-append-version="true"></script>
+    <script src="~/js/app.js" asp-append-version="true" defer></script>
+</head>
+<body>
+    <div class="theme-switch auth-theme" role="group" aria-label="Colour theme">
+        <button type="button" data-theme-choice="light" aria-pressed="false" title="Light theme" aria-label="Light theme">@Html.Icon("sun")</button>
+        <button type="button" data-theme-choice="system" aria-pressed="true" title="Follow system theme" aria-label="System theme">@Html.Icon("monitor")</button>
+        <button type="button" data-theme-choice="dark" aria-pressed="false" title="Dark theme" aria-label="Dark theme">@Html.Icon("moon")</button>
+    </div>
+    @RenderBody()
+</body>
+</html>

@@ -1,16 +1,29 @@
 # PCCAST Library System
 
-A web-based library management application for tracking book inventory, student borrowing records, returns, overdue fines, and dashboard statistics.
+A web-based school library management application for tracking book inventory, student borrowing records, returns, overdue fines, and dashboard statistics.
 
 Built with **C#**, **ASP.NET Core Razor Pages**, **Entity Framework Core**, and **SQLite**.
+
+---
+
+## Features
+
+- **Inventory Tracking**: Physical copy cataloging with individual accession numbers, shelf locations, and categories. Real-time availability derived from active loan records.
+- **Student Records**: Student management with grade/year levels, sections, and active/inactive status. Deactivation blocks new checkouts while preserving complete historical records.
+- **Borrowing & Return Workflows**: Step-by-step loan issuance with 7-day default due dates, administrator overrides, and return check-in.
+- **Automated Fine Calculations**: Computed in Philippine Standard Time (`Asia/Manila`, UTC+8). Snapshots daily fine rates per transaction, counts overdue calendar days, and separates estimated unreturned fines from finalized fines.
+- **Manual Payment Recording**: Records full or partial payments against finalized fines on returned books with duplicate submission and overpayment guards.
+- **Interactive Dashboard**: Summary metrics, monthly borrowing trends, inventory availability breakdown, top-borrowed titles, and overdue loan alerts.
+- **Security & Authorization**: Single administrator account secured with ASP.NET Core cookie authentication, salted password hashing, rate-limited login, anti-forgery protection, and strict Content Security Policy.
+- **Theme Support**: Built-in Light, Dark, and System color schemes with zero external CSS/JS dependencies.
 
 ---
 
 ## Architecture and Scope
 
 - **Three application tables**:
-  - `Books`: Individual physical copies with unique accession numbers, shelf locations, and catalog metadata. Availability is computed from active borrowing records.
-  - `Students`: Student records with unique student numbers, year levels, sections, and active/inactive status. Deactivation preserves borrowing history while preventing new checkouts.
+  - `Books`: Individual physical copies with unique accession numbers (`NOCASE`), shelf locations, and catalog metadata.
+  - `Students`: Student records with unique student numbers (`NOCASE`), year levels, sections, and active/inactive status.
   - `Borrowers`: Borrowing transaction records linking a student and a physical book copy. Captures loan dates, due dates (Philippine calendar dates), snapshot daily fine rates, return timestamps, finalized fines, and cumulative payments.
 - **Single Administrator Account**: Authenticated via ASP.NET Core Cookie Authentication. No `Users` table; administrator credentials are stored outside source control using salted PBKDF2 password hashes.
 - **Philippine Standard Time (PST, UTC+8)**: All due dates, overdue day counts, and fine assessments use the Philippine calendar date (`Asia/Manila`, UTC+8 with no DST).
@@ -22,7 +35,7 @@ Built with **C#**, **ASP.NET Core Razor Pages**, **Entity Framework Core**, and 
 
 ## Prerequisites
 
-- **Windows 10 / 11** or **Windows Server 2019+**
+- **Windows 10 / 11** or **Windows Server 2019+** (also runs on Linux / macOS with .NET 10)
 - **.NET 10.0 SDK** (or later supported .NET LTS release)
 - PowerShell 5.1+ or PowerShell 7+
 
@@ -34,52 +47,59 @@ dotnet --version
 
 ---
 
-## Quick Start on Windows
+## Quick Start Guide
 
-### 1. Clone or Open the Solution
+### 1. Clone the Repository
 
 ```powershell
-cd C:\Users\Admin\.gemini\antigravity\scratch\pccast-library-system
+git clone https://github.com/<YOUR_USERNAME>/pccast-library-system.git
+cd pccast-library-system
 ```
 
-### 2. Configure Administrator Credentials (Local Development)
+### 2. Configure Administrator Credentials
 
-The system requires one administrator account. For local development, store credentials using .NET User Secrets so secrets never touch source control:
+Administrator credentials are kept out of source control. For local development, set your credentials using .NET User Secrets:
 
 ```powershell
 cd src\PccastLibrary.Web
 
-# Generate a password hash for your chosen administrator password (min. 12 characters)
-dotnet run -- hash-password "YourSecurePassphrase123"
-
-# Set your chosen username and the generated hash into User Secrets
+# Option A: Use the default development administrator credentials
 dotnet user-secrets set "Admin:Username" "librarian"
-dotnet user-secrets set "Admin:PasswordHash" "<PASTE_GENERATED_HASH_HERE>"
+dotnet user-secrets set "Admin:PasswordHash" "AQAAAAIAAYagAAAAEPcOIju7WyRKELXt2TXZYEl5YHuyYP30SmTHxmXKBzhrjZT2+ACcogp8XzaEWYiP+Q=="
+
+# (This configures Username: librarian / Password: PccastAdmin2026!)
 ```
 
-*(Alternatively, run `dotnet run -- hash-password` without arguments to enter the password interactively with masked input).*
+```powershell
+# Option B: Use your own custom password
+dotnet run -- hash-password "YourCustomPassword123"
+dotnet user-secrets set "Admin:Username" "librarian"
+dotnet user-secrets set "Admin:PasswordHash" "<PASTE_HASH_OUTPUT_HERE>"
+```
 
-### 3. Initialize the Database & Load Optional Demo Data
+### 3. Initialize Database & Seed Sample Demo Data (Optional)
 
-Database migrations are automatically applied on application startup. To load fictional seed data for development and demonstration:
+Database migrations run automatically on startup. To seed sample books, students, and active/overdue loans for testing:
 
 ```powershell
-# Set environment to Development and run the seed command
-$env:ASPNETCORE_ENVIRONMENT="Development"
+$env:ASPNETCORE_ENVIRONMENT = "Development"
 dotnet run -- seed-demo
 ```
 
-The database file is created in `src\PccastLibrary.Web\App_Data\pccast-library.db` (outside the public `wwwroot` directory).
+The database file will be created in `src\PccastLibrary.Web\App_Data\pccast-library.db` (outside the public `wwwroot` directory).
 
-### 4. Run the Application
+### 4. Run the Web Application
 
 ```powershell
 dotnet run
 ```
 
-Open your browser to:
-- **URL**: `https://localhost:5001` or `http://localhost:5000`
-- Sign in with your configured administrator username and password.
+When started, open your web browser to:
+- **URL**: `http://localhost:5185` (or `https://localhost:7284`)
+- **Username**: `librarian`
+- **Password**: `PccastAdmin2026!` *(or your custom password)*
+
+*(To stop the server, press `Ctrl + C` in the PowerShell window).*
 
 ---
 
@@ -87,10 +107,9 @@ Open your browser to:
 
 The test suite includes 55 unit and end-to-end integration tests covering fine calculation boundary conditions, Philippine midnight transitions, database constraints, concurrent borrowing races, idempotency of returns, partial payments, and cookie authentication security.
 
-Run all tests:
+Run all tests from the repository root:
 
 ```powershell
-cd C:\Users\Admin\.gemini\antigravity\scratch\pccast-library-system
 dotnet test
 ```
 
@@ -111,11 +130,11 @@ dotnet test
 
 ## Database Backups
 
-Because the application uses SQLite with Write-Ahead Logging (WAL mode), standard file copies while the application is running could capture incomplete transactions. Use the built-in backup command:
+Because the application uses SQLite with Write-Ahead Logging (WAL mode), file copies while the application is running could capture incomplete transactions. Use the built-in backup command:
 
 ```powershell
 cd src\PccastLibrary.Web
-dotnet run -- backup "C:\backups\library-backup-2026-10-26.db"
+dotnet run -- backup "C:\backups\library-backup.db"
 ```
 
 This uses SQLite's online `VACUUM INTO` command to generate an atomic, consistent database snapshot without locking out active users.

@@ -52,8 +52,8 @@ dotnet --version
 ### 1. Clone the Repository
 
 ```powershell
-git clone https://github.com/<YOUR_USERNAME>/pccast-library-system.git
-cd pccast-library-system
+git clone https://github.com/dellpogie01/PCCAST_Library_System.git
+cd PCCAST_Library_System
 ```
 
 ### 2. Configure Administrator Credentials
